@@ -20,7 +20,7 @@ app = Flask(__name__)
 
 # Define constants
 ACCESS_EXPIRES = timedelta(hours=1)
-MAX_ROUNDS = 1
+MAX_ROUNDS = 5
 VALID_MOVES = ['rock', 'scissor', 'paper']
 
 # S the Flask-JWT-Extended extension
@@ -85,7 +85,11 @@ def verify_joining():
 
 @app.route("/create_game", methods=["POST"])
 def create_game():
-    """This endpoint allows clients to create a new game
+    """This endpoint allows clients to create a new game.
+    A unique 4 char game_id is randomly generated for the game.
+    User accessing this endpoint will become player_1.
+    A new game record is inserted into the DB and 
+    a JWT access token is generated for the user.
 
     Parameters:
     * username -> name of the user who creates the game
