@@ -1,3 +1,4 @@
+"""Import packages."""
 from distutils.command.config import config
 from flask import request, Blueprint
 from flask.json import jsonify
@@ -16,19 +17,21 @@ games_blueprint = Blueprint('games', __name__)
 
 @games_blueprint.route("/create_game", methods=["POST"])
 def create_game():
-    """This endpoint allows clients to create a new game.
+    """Endpoint for client to Create a new game.
+
+    This endpoint allows clients to create a new game.
     A unique 4 char game_id is randomly generated for the game.
     User accessing this endpoint will become player_1.
     A new game record is inserted into the DB and 
     a JWT access token is generated for the user.
 
     Parameters:
-    * username -> name of the user who creates the game
+        username: name of the user who creates the game
 
     Responses:
-    * 201 -> Success response with json data
-             containing JWT access_token & generated game_id
-    * 400 -> Error response in case invalid request data
+        201: Success response with json data
+                containing JWT access_token & generated game_id
+        400: Error response in case invalid request data
     """
     try:
         # Extract query parameters
@@ -58,16 +61,18 @@ def create_game():
 @games_blueprint.route("/join_game/<game_id>", methods=["POST"])
 @verify_joining()
 def join_game(game_id):
-    """This endpoint allows clients to join existing game
+    """Endpoint for client to join an existing game.
+
+    This endpoint allows clients to join existing game
     game_id is part of the endpoint
 
     Parameters:
-    * username -> name of the user who creates the game
+        username: name of the user who creates the game
 
     Responses:
-    * 201 -> Success response with json data
+        201: Success response with json data
              containing JWT access_token & generated game_id
-    * 400 -> Error response in case invalid request data
+        400: Error response in case invalid request data
     """
     try:
         # Extract query parameters
@@ -88,13 +93,16 @@ def join_game(game_id):
 @games_blueprint.route("/play/<move>", methods=["POST"])
 @jwt_required()
 def play(move):
-    """This endpoint allows clients to make moves for existing game.
+    """Endpoint for client to make a move.
+    
+    This endpoint allows clients to make moves for existing game.
     move is part of the endpoint.
 
     Responses:
-    * 201 -> Success response with json data
-    * 400 -> Error response in case invalid request data
-    * 422 -> Error response in case request with valid request but unprocessable
+        201: Success response with json data
+        400: Error response in case invalid request data
+        422: Error response in case request with valid request 
+            but unprocessable
     """    
     try:
         # Return error response if provided move is invalid
@@ -144,7 +152,9 @@ def play(move):
 @games_blueprint.route("/get_high_scores", methods=["GET"])
 @jwt_required()
 def get_high_scores():
-    """This endpoint allows clients get the scores for winners.
+    """Endpoint for client to get winner scores.
+    
+    This endpoint allows clients get the scores for winners.
     The scores are shown on the basis of no. of games won per user in descending order
 
     Responses:
