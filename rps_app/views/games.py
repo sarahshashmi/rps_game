@@ -1,89 +1,24 @@
-from flask import Flask, request
+from distutils.command.config import config
+from flask import request, Blueprint
 from flask.json import jsonify
 import json
 from flask_jwt_extended import create_access_token
 from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import get_jwt
-from flask_jwt_extended import JWTManager
-from flask_pymongo import PyMongo
-from functools import wraps
-from datetime import timedelta
-import random
-import string
+from rps_app import db
+from rps_app.utils import generate_game_id
+from rps_app.utils import verify_joining
+from rps_app.utils import determine_winner
+from config import Config
 
-# Create Flask object
-app = Flask(__name__)
+games_blueprint = Blueprint('games', __name__)
 
-# Configuration setup
-# TODO: CREATE A .env FILE AND STORE IN IT
+@games_blueprint.route("/", methods=["GET"])
+def index():
+    return jsonify("success")
 
-# Define constants
-ACCESS_EXPIRES = timedelta(hours=1)
-MAX_ROUNDS = 5
-VALID_MOVES = ['rock', 'scissor', 'paper']
-
-# S the Flask-JWT-Extended extension
-app.config["JWT_SECRET_KEY"] = 'thisismysecret' #change this!
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = ACCESS_EXPIRES
-
-# Setup database 
-app.config["MONGO_URI"] = "mongodb://localhost:27017/rps_database"
-mongodb_client = PyMongo(app)
-db = mongodb_client.db
-
-# Creates JWT object
-jwt = JWTManager(app)
-
-def generate_game_id():
-    while True:
-        game_id = ''.join(random.choices(string.ascii_lowercase, k=4))
-
-        if not db.game.find_one({"game_id": game_id}):
-            return game_id
-
-def determine_winner(p1_move, p2_move):
-    if p1_move == "rock" and p2_move == "scissor":
-        return("player_1")
-    elif p1_move == "scissor" and p2_move == "paper":
-        return("player_1")
-    elif p1_move == "paper" and p2_move == "rock":
-        return("player_1")
-    return("player_2")
-
-def verify_joining():
-    def wrapper(fn):
-        @wraps(fn)
-        def decorator(*args, **kwargs):
-            try:
-                game_id = kwargs['game_id']
-                                    
-                # Extract query parameters
-                post_data = json.loads(request.data)
-                username = post_data.get('username')
-                if not username:
-                    return jsonify({"error": "missing username"}), 400
-
-                # Return error if the game doesn't exist
-                doc = db.game.find_one({"game_id": game_id})
-                if not doc:
-                    return jsonify({"error": "game doesn't exist"}), 422
-
-                # If player_2 already exists for the given game, 
-                # then this endpoint request can't be processed anymore
-                if doc.get('player_2'):
-                    return jsonify({"error":"bad request"}), 400
-
-                # Return error if Player_2 name is same as Player_1 name
-                if username == doc['player_1']['name']:
-                    return jsonify({"error": "please choose another username"}), 422
-            except:
-                return jsonify({"error": "bad request"}), 400
-            return fn(*args, **kwargs)
-        return decorator
-    return wrapper  
-
-@app.route("/create_game", methods=["POST"])
+@games_blueprint.route("/create_game", methods=["POST"])
 def create_game():
     """This endpoint allows clients to create a new game.
     A unique 4 char game_id is randomly generated for the game.
@@ -124,7 +59,7 @@ def create_game():
     except:
         return jsonify({'message': 'bad request'}), 400
 
-@app.route("/join_game/<game_id>", methods=["POST"])
+@games_blueprint.route("/join_game/<game_id>", methods=["POST"])
 @verify_joining()
 def join_game(game_id):
     """This endpoint allows clients to join existing game
@@ -154,7 +89,7 @@ def join_game(game_id):
     except:
         return jsonify({'message': 'Bad request'}), 400
 
-@app.route("/play/<move>", methods=["POST"])
+@games_blueprint.route("/play/<move>", methods=["POST"])
 @jwt_required()
 def play(move):
     """This endpoint allows clients to make moves for existing game.
@@ -167,7 +102,7 @@ def play(move):
     """    
     try:
         # Return error response if provided move is invalid
-        if move.lower() not in VALID_MOVES:
+        if move.lower() not in Config.VALID_MOVES:
             return jsonify({"error": "invalid move"}), 400
 
         # Extract JWT claims
@@ -246,7 +181,7 @@ def play(move):
         # Set game status to finish if the round reaches to MAX_ROUNDS
         # and the round has both player's moves
         # and there is no tie in score between both the players
-        if round_finished and round-1 >= MAX_ROUNDS:
+        if round_finished and round-1 >= Config.MAX_ROUNDS:
             if p1_score != p2_score:
                 game_status = "finished"
                 if p1_score > p2_score:
@@ -271,7 +206,7 @@ def play(move):
     except:
         return jsonify({'message': 'bad requests'}), 400
 
-@app.route("/get_high_scores", methods=["GET"])
+@games_blueprint.route("/get_high_scores", methods=["GET"])
 @jwt_required()
 def get_high_scores():
     """This endpoint allows clients get the scores for winners.
@@ -299,10 +234,3 @@ def get_high_scores():
 
     # Return response
     return jsonify(response_data=response_data), 200
-
-if __name__ == '__main__':
-    # create indexes
-    db.game.create_index([("game_id", 1)], unique=True)
-    db.game.create_index([("status", 1)])
-    
-    app.run(debug=True)
