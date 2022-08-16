@@ -7,16 +7,12 @@ from flask_jwt_extended import get_jwt_identity
 from flask_jwt_extended import jwt_required
 from flask_jwt_extended import get_jwt
 from rps_app import db
-from rps_app.utils import generate_game_id
-from rps_app.utils import verify_joining
-from rps_app.utils import determine_winner
 from config import Config
+from rps_app.services.games import create_new_game
+from rps_app.services.games import verify_joining
+from rps_app.services.games import create_move
 
 games_blueprint = Blueprint('games', __name__)
-
-@games_blueprint.route("/", methods=["GET"])
-def index():
-    return jsonify("success")
 
 @games_blueprint.route("/create_game", methods=["POST"])
 def create_game():
@@ -41,8 +37,8 @@ def create_game():
         if not username:
             return jsonify({"error":"missing username"}), 400
         
-        # Generate new game id
-        game_id = generate_game_id()
+        # Create a new game
+        game_id = create_new_game()
 
         # Insert new record in game collection against generated unique game id
         db.game.insert_one({"game_id": game_id, "player_1": {"name": username, "score": 0}, \
@@ -121,90 +117,29 @@ def play(move):
         
         # Return error response if this game is already finised
         if doc['status'] == "finished":
-            return jsonify({"error": "bad request"}), 400
-
-        # Get document fields
-        last_move_by = doc['last_move_by']
-        player_1 = doc['player_1']
-        player_2 = doc['player_2']
-        round = doc['round']
-        round_moves = doc['round_moves']
-        p1_score = player_1['score']
-        p2_score = player_2['score']
-
-        # Return error response 
-        # if user other than player1 & player2 accesses this endpoint
-        if username not in [player_1['name'], player_2['name']]:
-            return jsonify({"error": "bad request"}), 422
-
-        # Initialize variables
-        updated_fields = {}
-        winner = None
-        game_status = "in_progress"
-        round_finished = False
+            return jsonify({"error": "bad requestff"}), 400
+  
+        # Return error response if user other than player1 
+        # or player2 accesses this endpoint
+        if username not in [doc['player_1']['name'], doc['player_2']['name']]:
+            return jsonify({"error": "bad requestaa"}), 422
 
         # Return error response if the user doesn't have turn yet
-        if last_move_by is None and player_1['name'] != username or\
-            last_move_by == username:
+        if doc['last_move_by'] is None and doc['player_1']['name'] != username or\
+            doc['last_move_by'] == username:
             return jsonify({"error": "wait for opponent's move"}), 422
-
-        # If moves for the game already exist in the table then
-        # either add this move for player_2 against existing round
-        # or create a new round entry for player_1 with this move
-        # Also, determine winner for the round if both players moves exist
-        if round_moves:
-            round_entries = round_moves.get(str(round), {})
-            if len(round_entries) == 1:
-                (p1, p1_move), = round_entries.items()
-                round_moves[str(round)][username] = move
-                round = int(round) + 1
-                round_finished = True
-                if p1_move == move:
-                    winner = "tie"
-                else:
-                    # Determine winner of the round
-                    winner = determine_winner(p1_move, move)
-                    if winner == "player_1":
-                        winner = player_1["name"]
-                        p1_score += 1
-                        updated_fields["player_1.score"] = p1_score
-                    else:
-                        winner = player_2["name"]
-                        p2_score += 1
-                        updated_fields["player_2.score"] = p2_score
-            else:
-                round_moves[str(round)] = {username:move}
-        else:
-            round_moves = {str(round + 1): {username: move}}
-            round = round + 1
-
-        # Set game status to finish if the round reaches to MAX_ROUNDS
-        # and the round has both player's moves
-        # and there is no tie in score between both the players
-        if round_finished and round-1 >= Config.MAX_ROUNDS:
-            if p1_score != p2_score:
-                game_status = "finished"
-                if p1_score > p2_score:
-                    winner = player_1['name']
-                else:
-                    winner = player_2['name']
-
-        # update game collection/table
-        updated_fields.update({"round": round, 
-                        "round_moves": round_moves, 
-                        "last_move_by": username, 
-                        "status": game_status,
-                        "winner": winner, 
-                        "round_finished": round_finished})
-
-        db.game.update_one({"game_id": game_id}, {"$set": updated_fields})
+    
+        # create move data and insert move to DB
+        args= {"username":username, "game_id":game_id, "move":move, "doc": doc}
+        data = create_move(**args)
+        db.game.update_one({"game_id": game_id}, {"$set": data})
 
         # Return success response
-        response_data = {"winner": winner, "status": game_status}
+        response_data = {"winner": data["winner"], "status": data["status"]}
         return jsonify(response_data), 201
 
-    except:
-        return jsonify({'message': 'bad requests'}), 400
+    except Exception as e:
+        return jsonify({'message': 'bad requestsyyy'}), 400
 
 @games_blueprint.route("/get_high_scores", methods=["GET"])
 @jwt_required()
