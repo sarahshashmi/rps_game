@@ -158,7 +158,7 @@ def get_high_scores():
     The scores are shown on the basis of no. of games won per user in descending order
 
     Responses:
-    * 200 -> Success json response with scores of winners i.e.
+        200: Success json response with scores of winners i.e.
             (total games won per user)
     """
     response_data = {}

@@ -7,7 +7,7 @@ class Config:
     DEBUG = True
     TESTING = True
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
-    MAX_ROUNDS = 5
+    MAX_ROUNDS = 3
     VALID_MOVES = ['rock', 'scissor', 'paper']
     GAME_STRING_LENGTH = 4
 

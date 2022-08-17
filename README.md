@@ -28,7 +28,8 @@ The API has following 4 endpoints:
 - `POST` : `\play/<move>`: Both the players can make their moves until max round is reached 
 - `GET`  : `\get_high_scores`: Games won per player can be shown by accessing this route
 
-API documentation can be found <here>
+API documentation can be found here [here](https://documenter.getpostman.com/view/19594912/VUqmuJPz)
+
 
 ## Installation
 
@@ -48,6 +49,9 @@ API documentation can be found <here>
 - [ ] Add tests
 - [ ] Add logging
 - [ ] Add typehinting
-- [ ] Add missing comments, docstring
 - [ ] Try socket.io
-- [ ] Add API documentation
+- [ ] Add models
+- [ ] Add unique username validation on DB level
+- [ ] Create generic response object
+- [ ] Improvise API documentation
+- [ ] Dockerize the app
