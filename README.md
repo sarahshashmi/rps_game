@@ -12,7 +12,7 @@ The API implements the backend for a Rock Paper Scissors game.
 Another user who joins the game with the game_id becomes player_2. 
 - The game can only be started when both the players join the game. Meaning, the `\play\<move>` endpoint can only be accessed when game has both the players in DB.
 - Only player_1 can make the first move and subsequent moves are made turn wise. API doesn't allow player_1 to make the move when it's player_2 turn and vice versa.
-- The game has a minimum of 5 rounds. By the end of the 5th round, the game finishes if there's no tie between both players. Otherwise, the game will continue until there's a winner, incrementing the rounds by 1.
+- The game has a minimum of 3 rounds. By the end of the 3rd round, the game finishes if there's no tie between both players. Otherwise, the game will continue until there's a winner, incrementing the rounds by 1.
 - Once the game is finished, winner name is returned and players can't make the moves anymore.
 - The API also facilitates to show all the winner scores. The endpoint returns the no. of won games per user in descending order.
 
